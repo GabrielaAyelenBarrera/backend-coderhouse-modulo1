@@ -272,11 +272,13 @@ GET /api/products?page=3
 ✔️ Validaciones completas
 ✔️ Seed de datos
 
+
 ---
 
 ## 👩‍💻 Autora
-
-Proyecto desarrollado por **Gabriela Barrera** como práctica de Backend con Node.js y MongoDB.
+**Gabriela Ayelén Barrera**  
+📫 Contacto: gabrielaayelenbarrera1145@gmail.com  
+🔗 LinkedIn: www.linkedin.com/in/gabrielabarrera-
 
 ---
 
