@@ -1,189 +1,257 @@
-import express from "express";
 import mongoose from "mongoose";
+import CartsModelo from "./models/cartsModelo.js";
 
-import CartsMongoDAO from "../dao/CartsMongoDAO.js";
+class CartsMongoDAO {
+  // Método para obtener todos los carritos
+  static async getCarts() {
+    try {
+      const carts = await CartsModelo.find().lean();
+      console.log("Carts data:", carts); // Agrega un log aquí
 
-const router = express.Router();
-
-// Ruta para obtener todos los carritos
-router.get("/", async (req, res) => {
-  try {
-    const carts = await CartsMongoDAO.getCarts();
-    res.json(carts);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+      return carts.map((cart) => ({
+        ...cart,
+        products: cart.products.map((p) => {
+          if (!p.product) {
+            console.error("Undefined product:", p); // Agrega un log si p.product es undefined
+          }
+          return {
+            product: p.product ? p.product.toString() : "undefined", // Manejar caso undefined
+            quantity: p.quantity,
+          };
+        }),
+      }));
+    } catch (error) {
+      console.error("Error in getCarts:", error); // Agrega un log de error
+      throw error;
+    }
   }
-});
+  // Método para crear un nuevo carrito
+  static async create() {
+    try {
+      const newCart = { products: [] };
+      const result = await CartsModelo.create(newCart);
+      return result._id;
+    } catch (error) {
+      console.error("Error creating cart:", error); // Agrega el error a los logs del servidor
+      throw new Error("Error creating cart: " + error.message);
+    }
+  }
+  // Obtener un carrito por su ID y populando los productos
+  static async getCartById(cid) {
+    try {
+      const cart = await CartsModelo.findById(cid)
+        .populate("products.product")
+        .lean();
 
-// Ruta para obtener un carrito por ID
-router.get("/:id", async (req, res) => {
-  try {
-    const cartId = req.params.id;
+      if (!cart) {
+        return null; // Devuelve null si el carrito no existe
+      }
 
-    // Validación del formato del ObjectId
-    if (!mongoose.Types.ObjectId.isValid(cartId)) {
-      return res.status(400).json({
-        error:
-          "ID de carrito inválido. Asegúrate de que tenga el formato correcto.",
-      });
+      // Transformar la respuesta para que tenga la estructura deseada
+      return {
+        ...cart,
+        products: cart.products.map((p) => ({
+          product: p.product,
+          quantity: p.quantity,
+        })),
+      };
+    } catch (error) {
+      console.error("Error al obtener el carrito:", error);
+      throw new Error(`Error al obtener el carrito: ${error.message}`);
+    }
+  }
+
+  // Método para actualizar la cantidad de un producto en el carrito
+  static async updateProductQuantityInCart(cid, pid, quantity) {
+    if (
+      !mongoose.Types.ObjectId.isValid(cid) ||
+      !mongoose.Types.ObjectId.isValid(pid)
+    ) {
+      throw new Error("Invalid cart or product ID");
     }
 
-    const cart = await CartsMongoDAO.getCartById(cartId);
-
+    const cart = await CartsModelo.findById(cid);
     if (!cart) {
-      return res.status(404).json({ error: "Carrito no encontrado" });
+      throw new Error(`Cart with ID ${cid} not found`);
     }
 
-    res.json(cart);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Ruta para crear un nuevo carrito
-router.post("/", async (req, res) => {
-  try {
-    const newCart = await CartsMongoDAO.create();
-    res.status(201).json({ message: "Carrito creado", id: newCart });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Ruta para agregar un producto a un carrito específico
-router.post("/:id/products", async (req, res) => {
-  const { id } = req.params; // ID del carrito
-  const { product, quantity } = req.body; // Producto y cantidad desde el cuerpo de la solicitud
-
-  // Validar que la cantidad sea mayor que 0
-  if (!quantity || quantity <= 0) {
-    return res.status(400).json({ error: "La cantidad debe ser mayor a 0." });
-  }
-
-  try {
-    // Llamar al método para agregar el producto al carrito
-    const updatedCart = await CartsMongoDAO.addProductToCart(id, {
-      pid: product,
-      quantity,
-    });
-    res.status(200).json(updatedCart); // Responder con el carrito actualizado
-  } catch (error) {
-    if (error.message.includes("not found")) {
-      return res.status(404).json({
-        error: `Carrito no encontrado: ${error.message}`,
-      });
-    }
-    if (error.message.includes("Invalid product ID")) {
-      return res.status(400).json({
-        error: `Producto no válido: ${error.message}`,
-      });
-    }
-    // Manejo de errores generales
-    res.status(500).json({
-      error: `Error al agregar el producto al carrito: ${error.message}`,
-    });
-  }
-});
-
-// Ruta para actualizar SOLO la cantidad de un producto en un carrito específico
-router.put("/:cid/products/:pid", async (req, res) => {
-  const { cid, pid } = req.params;
-  const { quantity } = req.body;
-
-  try {
-    const updatedCart = await CartsMongoDAO.updateProductQuantityInCart(
-      cid,
-      pid,
-      quantity
+    const existingProduct = cart.products.find(
+      (p) => p.product.toString() === pid
     );
-    res.status(200).json(updatedCart);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Ruta para actualizar el carrito con un arreglo de productos
-router.put("/:cid", async (req, res) => {
-  const { cid } = req.params;
-  const { products } = req.body; // Extraer la propiedad 'products' del cuerpo de la solicitud
-
-  // Validar los productos antes de llamar al método DAO
-  if (!Array.isArray(products)) {
-    return res
-      .status(400)
-      .json({ error: "El campo 'products' debe ser un array." });
-  }
-
-  for (const item of products) {
-    if (!item.product || !item.quantity) {
-      // Asegurarse de que 'product' esté presente
-      return res.status(400).json({
-        error:
-          "Cada objeto en 'products' debe tener propiedades 'product' y 'quantity'.",
-      });
-    }
-
-    if (typeof item.quantity !== "number" || item.quantity <= 0) {
-      return res.status(400).json({
-        error: "La propiedad 'quantity' debe ser un número positivo.",
-      });
-    }
-  }
-
-  try {
-    // Actualizar el carrito con los productos
-    const updatedCart = await CartsMongoDAO.updateCartProducts(cid, products);
-    res.status(200).json(updatedCart);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.delete("/:cid/products/:pid", async (req, res) => {
-  const { cid, pid } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(cid)) {
-    return res
-      .status(400)
-      .json({ error: `El ID del carrito ${cid} no es válido` });
-  }
-
-  if (!mongoose.Types.ObjectId.isValid(pid)) {
-    return res
-      .status(400)
-      .json({ error: `El ID del producto ${pid} no es válido` });
-  }
-
-  try {
-    const result = await CartsMongoDAO.removeProductFromCart(cid, pid);
-
-    // Manejo de resultados
-    return res.status(200).json({ message: result.message });
-  } catch (error) {
-    console.error("Error en la eliminación del producto:", error);
-    return res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// Ruta para eliminar todos los productos de un carrito específico
-router.delete("/:cid", async (req, res) => {
-  try {
-    const { cid } = req.params; // Corregido para que coincida con el parámetro de la ruta
-    const updatedCart = await CartsMongoDAO.clearCartProducts(cid);
-
-    if (updatedCart) {
-      res.json({
-        message: "Todos los productos han sido eliminados del carrito",
-        cart: updatedCart,
-      });
+    if (existingProduct) {
+      existingProduct.quantity = quantity;
     } else {
-      res.status(404).json({ error: "Carrito no encontrado" });
+      cart.products.push({
+        product: new mongoose.Types.ObjectId(pid),
+        quantity,
+      });
     }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
-export default router;
+    const updatedCart = await cart.save();
+
+    return {
+      ...updatedCart.toObject(),
+      products: updatedCart.products.map((p) => ({
+        product: p.product.toString(),
+        quantity: p.quantity,
+      })),
+    };
+  }
+  // Actualizar la cantidad de un producto en el carrito
+  static async updateCartProducts(cid, products) {
+    if (!mongoose.Types.ObjectId.isValid(cid)) {
+      throw new Error("Invalid cart ID");
+    }
+
+    // Verifica si el carrito existe
+    const cart = await CartsModelo.findById(cid);
+    if (!cart) {
+      throw new Error(`Cart with ID ${cid} not found`);
+    }
+
+    // Verifica que products es un array
+    if (!Array.isArray(products)) {
+      console.error("Received products:", products); // Para depuración
+      throw new Error("Products should be an array");
+    }
+    products.forEach((product) => {
+      if (!product.product || typeof product.quantity !== "number") {
+        throw new Error(
+          "Each product must have a valid 'product' ID and 'quantity'"
+        );
+      }
+    });
+
+    // Actualizar los productos en el carrito
+    cart.products = products.map((product) => ({
+      product: new mongoose.Types.ObjectId(product.product),
+      quantity: product.quantity,
+    }));
+
+    // Guardar el carrito actualizado
+    const updatedCart = await cart.save();
+
+    // Popula los productos para devolver los detalles completos
+    const populatedCart = await CartsModelo.findById(updatedCart._id)
+      .populate("products.product")
+      .lean();
+
+    // Transformar la respuesta para que tenga la estructura deseada
+    const response = {
+      products: populatedCart.products.map((p) => ({
+        product: p.product._id.toString(),
+        quantity: p.quantity,
+      })),
+    };
+
+    return response;
+  }
+  // Método para añadir un producto al carrito
+  static async addProductToCart(cid, { pid, quantity }) {
+    if (!mongoose.Types.ObjectId.isValid(cid) || !mongoose.Types.ObjectId.isValid(pid)) {
+      throw new Error("Invalid cart or product ID");
+    }
+  
+    const cart = await CartsModelo.findById(cid).exec();
+    if (!cart) {
+      throw new Error(`Cart with ID ${cid} not found`); // Lanza un error específico
+    }
+  
+    const existingProduct = cart.products.find((p) => p.product.toString() === pid);
+    if (existingProduct) {
+      existingProduct.quantity += quantity;
+    } else {
+      cart.products.push({
+        product: new mongoose.Types.ObjectId(pid),
+        quantity,
+      });
+    }
+  
+    const updatedCart = await cart.save();
+    return {
+      ...updatedCart.toObject(),
+      products: updatedCart.products.map((p) => ({
+        product: p.product.toString(),
+        quantity: p.quantity,
+      })),
+    };
+  }
+  
+
+  static async removeProductFromCart(cid, pid) {
+    if (
+      !mongoose.Types.ObjectId.isValid(cid) ||
+      !mongoose.Types.ObjectId.isValid(pid)
+    ) {
+      throw new Error("Invalid cart or product ID");
+    }
+  
+    const cart = await CartsModelo.findById(cid).lean();
+    if (!cart) {
+      return { message: "Carrito no encontrado" }; // Carrito no encontrado
+    }
+  
+    // Verificar si el carrito tiene productos
+    if (cart.products.length === 0) {
+      return { message: "El carrito está vacío, no hay productos que eliminar." }; // Carrito vacío
+    }
+  
+    const productIndex = cart.products.findIndex(
+      (p) => p.product.toString() === pid.toString()
+    );
+    if (productIndex === -1) {
+      return { message: "Producto no encontrado en el carrito" }; // Producto no encontrado
+    }
+  
+    await CartsModelo.findByIdAndUpdate(
+      cid,
+      {
+        $pull: {
+          products: { product: new mongoose.Types.ObjectId(pid) },
+        },
+      },
+      { new: true }
+    ).lean();
+  
+    return { message: "Producto eliminado del carrito" }; // Producto eliminado
+  }
+  
+// Método para eliminar todos los productos de un carrito específico
+static async clearCartProducts(cid) {
+  if (!mongoose.Types.ObjectId.isValid(cid)) {
+    throw new Error("Invalid cart ID");
+  }
+
+  // Busca el carrito para verificar si existe
+  const cart = await CartsModelo.findById(cid);
+  if (!cart) {
+    throw new Error(`Cart with ID ${cid} not found`);
+  }
+
+  // Verifica si el carrito ya está vacío
+  if (cart.products.length === 0) {
+    return {
+      message: "El carrito ya está vacío.",
+      cart: cart, // Devuelve el carrito actual sin cambios
+    };
+  }
+
+  // Actualiza el carrito vaciando el arreglo de productos
+  const updatedCart = await CartsModelo.findByIdAndUpdate(
+    cid,
+    { $set: { products: [] } }, // Vacía el array de productos
+    { new: true } // Devuelve el carrito actualizado
+  ).lean();
+
+  // Devuelve el carrito actualizado con el formato correcto
+  return {
+    message: "Todos los productos han sido eliminados del carrito",
+    cart: updatedCart,
+  };
+}
+}
+
+export default CartsMongoDAO;
+
 
 
