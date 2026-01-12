@@ -1,80 +1,281 @@
-MODIFICACIONES Y MEJORAS IMPLEMENTADAS:
+# 🛒 Proyecto eCommerce – Backend + Frontend
 
--DESGARGUE EXPRESS-HANDLEBARS
--ARREGLE PAGINADO, LIMIT Y CATEGORY EN http://localhost:8080/products 
--AÑADI BOTON DE "VER CARRITO" REDIRECCIONA EN http://localhost:8080/cart Y BOTONES DE "Actualizar Cantidad" Y "Eliminar del Carrito"
--Cambie el uso de productId a product en mi DAO y rutas para alinear con el esquema cartSchema.
--Probe metodos, rutas y modelo schema + Agregue validaciones de todo tipo
+Este proyecto corresponde a un **eCommerce desarrollado con Node.js, Express, MongoDB y Handlebars**, que implementa una API REST completa para la gestión de **productos y carritos**, junto con una **interfaz web funcional** para navegar productos y operar un carrito de compras.
+
+El objetivo principal del proyecto es **aprender y consolidar conceptos de backend**, persistencia en MongoDB, validaciones, manejo de rutas, DAO, y renderizado desde el servidor.
+
+---
+
+## 🚀 Tecnologías utilizadas
+
+* Node.js
+* Express.js
+* MongoDB + Mongoose
+* Express Handlebars
+* JavaScript (Frontend)
+* HTML / CSS
+
+---
+
+## 📂 Estructura general del proyecto
+
+* `/src`
+
+  * `/dao` → Acceso a datos (MongoDAO)
+  * `/models` → Schemas de Mongoose (Products, Carts)
+  * `/routes` → Rutas de Products y Carts
+  * `/views` → Handlebars (products, carts)
+  * `/public/js` → Lógica frontend (products.js, carts.js)
+* `/seedMongo.js` → Script para generar datos de prueba
+
+---
+
+## ⚙️ Configuración inicial
+
+### 1️⃣ Clonar el repositorio
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd <NOMBRE_DEL_PROYECTO>
+```
+
+### 2️⃣ Instalar dependencias
+
+```bash
+npm install
+```
+
+### 3️⃣ Variables de entorno
+
+⚠️ **Importante – Seguridad**
 
 
-CARTS:
+Crear un archivo `.env` en la raíz del proyecto con el siguiente contenido:
 
-1-GET  http://localhost:8080/api/carts                                    OK
+```env
+PORT=8080
+MONGO_URL=mongodb+srv://<USUARIO>:<PASSWORD>@<CLUSTER>/<DB>?retryWrites=true&w=majority
+DB_NAME=clase15
+SECRET=coderhouse
+```
 
-2-GET http://localhost:8080/api/carts/{cartId}                            OK DEVUELVE EL CART BUSCADO CON PEDIDOS O VACIO + AÑADI VALIDACIONES DE SI EL CART ES INCORRECTO O POSEE FORMATO INVALIDO
+---
 
-3-POST http://localhost:8080/api/carts/{cartId}/products                  OK DEVUELVE EL CART CON EL PRODUCT AÑADIDO Y QUANTITY + VALIDACIONES CUANDO EL NUM DE CART ES INCORRECTO Y CUANDO DEBE SER QUANTITY MAYOR Q -1 
-BODY {  "product": "66e0fca1dec613183ca795d6", "quantity": 2}
+## ▶️ Cómo ejecutar el proyecto
 
-4-POST http://localhost:8080/api/carts/                                   OK    {"message": "Carrito creado","id": "66ec616080d2562c97a30bd8"}
+```bash
+npm run dev
+```
 
-5-PUT http://localhost:8080/api/carts/{cartId}/products/{productId}       OK
-BODY {"quantity": 10}
+El servidor quedará corriendo en:
 
-6-PUT http://localhost:8080/api/carts/invalid-id/products/invalid-id      OK ME DA ESTA RESPUESTA { "error": "Invalid cart or product ID" } + VALIDACIONES DE CARTS O PRODUCT INVALIDO
+👉 **[http://localhost:8080](http://localhost:8080)**
 
-7-PUT http://localhost:8080/api/carts/:cid                                OK AÑADE LAS MODIFICACIONES  + VALIDACIONES AVISA CUANDO EL CARRITO ES INCORRECTO 
-BODY {"products": [
-    { "product": "66e9c8454707407df248a23e", "quantity": 2 }
-  ]}
+---
 
-8-DELETE http://localhost:8080/api/carts/66e0fca6dec613183ca7a872/products/66e0fca1dec613183ca795d6                OK  AÑADI VALIDACIONES TANTO SI EL CART O PROD NO EXISTEN COMO SI YA SE HABIA ELIMINADO ANTERIORMENTE
+## 🛍️ Funcionamiento general del sistema
 
-9-DELETE http://localhost:8080/api/carts/66e0fca6dec613183ca7a872/products/invalid-id                              OK {"error": "Producto no encontrado en el carrito"}
+### 🔹 Productos
 
-10-DELETE http://localhost:8080/api/carts/:cid                             OK ME DA ESTA RESPUESTA {"message": "Todos los productos han sido eliminados del carrito", "cart": { "_id": "66e0fca6dec613183ca7a873","products": [],  "__v": 4}} + AÑADI VALIDACION PARA Q NO SIGA ELIMINANDO PRODUCTO YA ELIMINADO TANTO PARA Q AVISE SI EL CARRITO NO EXISTE
+* Los productos se almacenan en MongoDB
+* Se pueden crear, modificar, eliminar y listar
+* Se soportan filtros por **categoría**, **límite** y **paginación**
+* Se renderizan en el frontend usando Handlebars
 
-11-DELETE http://localhost:8080/api/carts/invalid-id                       OK    {"error": "Cart with ID 66eca83bb1e60e6ef22cdb60 not found"}
+### 🔹 Carrito de compras
 
+* El proyecto utiliza un **carrito hardcodeado**
+* Todos los productos agregados desde el frontend se almacenan en ese carrito
+* El ID del carrito se define en el frontend
 
-PRODUCTS:
+📍 Archivo clave:
 
-1. Obtener todos los productos (GET)
-URL: http://localhost:8080/api/products
+```js
+public/js/products.js
+```
 
-2. Crear un producto (POST)
-URL: http://localhost:8080/api/products
-BODY
-{
-  "title": "Zapatillas Air Max",
-  "description": "Zapatillas de running cómodas",
-  "code": "AMX2024",
-  "price": 120,
-  "stock": 25,
-  "category": "Lifestyle",
-  "thumbnails": ["image1.jpg", "image2.jpg"]
-}
+```js
+const hardcodedCartId = "ID_DEL_CARRITO";
+```
 
-3. Actualizar un producto (PUT)
-URL: http://localhost:8080/api/products/{productID}
-BODY 
-{
-  "title": "Zapatillas Air Max Actualizadas",
-  "description": "Nuevas zapatillas con mejor diseño",
-  "price": 130,
-  "stock": 30,
-  "category": "Casual"
-}
+Para usar otro carrito, solo es necesario **reemplazar ese ID**.
 
-4. Eliminar un producto (DELETE)
-URL: http://localhost:8080/api/products/{productID}
+---
 
-5. Filtrar productos por categoría (GET)
-http://localhost:8080/api/products?category=Casual
+## 🖥️ Frontend
 
-6. Filtrar productos por limite (LIMIT)
-http://localhost:8080/api/products?limit=2
+### 📄 Página de Productos (`/products`)
 
-7. Filtrar productos por pagina (PAGINATE)
-http://localhost:8080/api/products?page=3
+Incluye:
+
+* Listado de productos
+* Botón **Agregar al carrito**
+* Paginación
+* Filtros por categoría
+* Botón **Ver carrito**
+
+### 📄 Página de Carrito (`/cart`)
+
+Incluye:
+
+* Listado de productos agregados
+* Actualizar cantidad
+* Eliminar producto
+* Vaciar carrito
+
+---
+
+## 🔁 Seed de datos (Products y Carts)
+
+Para generar datos de prueba:
+
+```bash
+node seedMongo.js
+```
+
+Este script:
+
+* Genera productos
+* Genera carritos
+* Permite obtener IDs válidos para pruebas
+
+---
+
+## 📌 Endpoints – API REST
+
+### 🛒 CARTS
+
+1️⃣ Obtener todos los carritos
+
+```
+GET /api/carts
+```
+
+2️⃣ Obtener carrito por ID
+
+```
+GET /api/carts/:cid
+```
+
+Incluye validaciones de ID inválido o inexistente.
+
+3️⃣ Agregar producto al carrito
+
+```
+POST /api/carts/:cid/products
+```
+
+Body:
+
+```json
+{ "product": "PRODUCT_ID", "quantity": 2 }
+```
+
+4️⃣ Crear carrito
+
+```
+POST /api/carts
+```
+
+5️⃣ Actualizar cantidad de un producto
+
+```
+PUT /api/carts/:cid/products/:pid
+```
+
+6️⃣ Reemplazar productos del carrito
+
+```
+PUT /api/carts/:cid
+```
+
+7️⃣ Eliminar producto del carrito
+
+```
+DELETE /api/carts/:cid/products/:pid
+```
+
+8️⃣ Vaciar carrito
+
+```
+DELETE /api/carts/:cid
+```
+
+Todas las rutas incluyen **validaciones completas** de IDs y estados.
+
+---
+
+### 📦 PRODUCTS
+
+1️⃣ Obtener productos
+
+```
+GET /api/products
+```
+
+2️⃣ Crear producto
+
+```
+POST /api/products
+```
+
+3️⃣ Actualizar producto
+
+```
+PUT /api/products/:pid
+```
+
+4️⃣ Eliminar producto
+
+```
+DELETE /api/products/:pid
+```
+
+5️⃣ Filtros
+
+* Por categoría:
+
+```
+GET /api/products?category=Casual
+```
+
+* Por límite:
+
+```
+GET /api/products?limit=2
+```
+
+* Por página:
+
+```
+GET /api/products?page=3
+```
+
+---
+
+## ✅ Validaciones implementadas
+
+* IDs inválidos o inexistentes
+* Cantidades negativas o inválidas
+* Productos duplicados
+* Eliminaciones repetidas
+* Carritos inexistentes
+
+---
+
+## 📌 Estado del proyecto
+
+✔️ API REST funcional
+✔️ Persistencia en MongoDB
+✔️ Frontend integrado con Handlebars
+✔️ Validaciones completas
+✔️ Seed de datos
+
+---
+
+## 👩‍💻 Autora
+
+Proyecto desarrollado por **Gabriela Barrera** como práctica de Backend con Node.js y MongoDB.
+
+---
 
