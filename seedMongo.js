@@ -75,10 +75,11 @@ const generateCarts = (count, productIds) => {
   for (let i = 0; i < count; i++) {
     const randomProductId =
       productIds[Math.floor(Math.random() * productIds.length)];
-    const cart = {
-      productId: randomProductId,
-      quantity: Math.floor(Math.random() * 5) + 1,
-    };
+const cart = {
+  products: [
+    { product: randomProductId, quantity: Math.floor(Math.random() * 5) + 1 }
+  ]
+};
     carts.push(cart);
   }
   return carts;
@@ -132,3 +133,4 @@ rl.question("Por favor, introduce tu clave: ", async (clave) => {
 
   rl.close();
 });
+
