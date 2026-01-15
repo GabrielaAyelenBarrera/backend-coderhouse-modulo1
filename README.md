@@ -90,9 +90,7 @@ El servidor quedará corriendo en:
 
 📍 Archivo clave:
 
-```js
-public/js/products.js
-```
+`public/js/products.js`
 
 `const hardcodedCartId = "ID_DEL_CARRITO";`
 
