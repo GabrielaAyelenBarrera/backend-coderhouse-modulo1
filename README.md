@@ -143,23 +143,19 @@ Este script:
 
 1️⃣ Obtener todos los carritos
 
-```
-GET /api/carts
-```
+
+GET `/api/carts`
+
 
 2️⃣ Obtener carrito por ID
 
-```
-GET /api/carts/:cid
-```
+GET `/api/carts/:cid`
 
 Incluye validaciones de ID inválido o inexistente.
 
 3️⃣ Agregar producto al carrito
 
-```
-POST /api/carts/:cid/products
-```
+POST `/api/carts/:cid/products`
 
 Body:
 
@@ -169,33 +165,24 @@ Body:
 
 4️⃣ Crear carrito
 
-```
-POST /api/carts
-```
+POST `/api/carts`
 
 5️⃣ Actualizar cantidad de un producto
 
-```
-PUT /api/carts/:cid/products/:pid
-```
+PUT `/api/carts/:cid/products/:pid`
 
 6️⃣ Reemplazar productos del carrito
 
-```
-PUT /api/carts/:cid
-```
+PUT `/api/carts/:cid`
 
 7️⃣ Eliminar producto del carrito
 
-```
-DELETE /api/carts/:cid/products/:pid
-```
+DELETE `/api/carts/:cid/products/:pid`
+
 
 8️⃣ Vaciar carrito
 
-```
-DELETE /api/carts/:cid
-```
+DELETE `/api/carts/:cid`
 
 Todas las rutas incluyen **validaciones completas** de IDs y estados.
 
@@ -205,47 +192,33 @@ Todas las rutas incluyen **validaciones completas** de IDs y estados.
 
 1️⃣ Obtener productos
 
-```
-GET /api/products
-```
+GET `/api/products`
 
 2️⃣ Crear producto
 
-```
-POST /api/products
-```
+POST `/api/products`
 
 3️⃣ Actualizar producto
 
-```
-PUT /api/products/:pid
-```
+PUT `/api/products/:pid`
 
 4️⃣ Eliminar producto
 
-```
-DELETE /api/products/:pid
-```
+DELETE `/api/products/:pid`
 
 5️⃣ Filtros
 
 * Por categoría:
 
-```
-GET /api/products?category=Casual
-```
+GET `/api/products?category=Casual`
 
 * Por límite:
 
-```
-GET /api/products?limit=2
-```
+GET `/api/products?limit=2`
 
 * Por página:
 
-```
-GET /api/products?page=3
-```
+GET `/api/products?page=3`
 
 ---
 
