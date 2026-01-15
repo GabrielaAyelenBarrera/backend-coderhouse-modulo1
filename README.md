@@ -35,8 +35,8 @@ El objetivo principal del proyecto es **aprender y consolidar conceptos de backe
 ### 1️⃣ Clonar el repositorio
 
 ```bash
-git clone https://github.com/GabrielaAyelenBarrera/GabrielaBarrera-ProyectoCoderHouse-BackendModulo1.git
-cd GabrielaBarrera-ProyectoCoderHouse-BackendModulo1
+git clone https://github.com/GabrielaAyelenBarrera/backend-coderhouse-modulo1.git
+cd backend-coderhouse-modulo1
 
 ```
 
